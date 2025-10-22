@@ -96,8 +96,8 @@ public class Warehouse {
      * Returns a list of shippable products
      * Only products implementing Shippable are considered
      */
-    public List<Product> shippableProducts() {
-        return products.values().stream().filter(p -> p instanceof Shippable).collect(Collectors.toList());
+    public List<Shippable> shippableProducts() {
+        return products.values().stream().filter(p -> p instanceof Shippable).map(p -> (Shippable) p).collect(Collectors.toList());
     }
 
     /**
