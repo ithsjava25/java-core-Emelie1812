@@ -20,6 +20,9 @@ public abstract class Product {
         this.category = category;
         this.price = price;
     }
+    public UUID uuid(){
+        return id;
+    }
 
     public String name() {
         return name;
