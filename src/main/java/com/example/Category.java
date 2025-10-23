@@ -13,6 +13,10 @@ public final class Category {
         this.name = name;
     }
 
+    public String getName(){
+        return name;
+    }
+
     public static Category of(String name) {
         if (name == null) {
             throw new IllegalArgumentException("Category name can't be null");

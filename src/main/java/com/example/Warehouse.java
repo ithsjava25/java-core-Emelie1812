@@ -14,6 +14,11 @@ public class Warehouse {
     // Map to hold singleton instances per warehouse name
     private static final Map<String, Warehouse> INSTANCES = new ConcurrentHashMap<>();
 
+    public List<Perishable> perishables() {
+        return products.values().stream().filter(p -> p instanceof Perishable).map(p -> (Perishable) p)
+                .collect(Collectors.toList());
+    }
+
     // Name of the warehouse instance
     private final String name;
 
@@ -49,11 +54,16 @@ public class Warehouse {
         products.put(product.uuid(), product);
     }
 
-    /**
-     * Returns an unmodified list of all products in the warehouse.
-     */
     public List<Product> getProducts() {
         return Collections.unmodifiableList(new ArrayList<>(products.values()));
+    }
+
+    /**
+     * Returns all products that are perishable.
+     */
+    public List<Perishable> getPerishableProducts() {
+        return products.values().stream().filter(p -> p instanceof Perishable)
+                .map(p -> (Perishable) p).collect(Collectors.toList());
     }
 
     /**
@@ -87,9 +97,9 @@ public class Warehouse {
      * Returns a list of expired products.
      * Only products implementing Perishable are considered
      */
-    public List<Product> expiredProducts() {
+    public List<Perishable> expiredProducts() {
         return products.values().stream().filter(p -> p instanceof Perishable)
-                .filter(p -> ((Perishable) p).isExpired()).collect(Collectors.toList());
+                .map(p -> (Perishable) p).filter(Perishable::isExpired).collect(Collectors.toList());
     }
 
     /**
@@ -112,6 +122,23 @@ public class Warehouse {
      */
     public String getName() {
         return name;
+    }
+
+    /**
+     * Removes all products from the warehouse.
+     * Also clears the list of changed products.
+     */
+    public void clearProducts() {
+        products.clear();
+        changedProducts.clear();
+    }
+
+    public boolean isEmpty() {
+        return products.isEmpty();
+    }
+
+    public Map<Category, List<Product>> getProductsGroupedByCategories() {
+        return products.values().stream().collect(Collectors.groupingBy(Product::category));
     }
 
 }
