@@ -7,6 +7,7 @@ import java.time.LocalDate;
 import java.util.*;
 import java.util.stream.Collectors;
 
+
 /**
  * Analyzer class that provides advanced warehouse operations.
  * Students must implement these methods for the advanced tests to pass.
@@ -17,7 +18,7 @@ class WarehouseAnalyzer {
     public WarehouseAnalyzer(Warehouse warehouse) {
         this.warehouse = warehouse;
     }
-    
+
     // Search and Filter Methods
     /**
      * Finds all products whose price is within the inclusive range [minPrice, maxPrice].
@@ -136,35 +137,61 @@ class WarehouseAnalyzer {
         }
         return result;
     }
-    
+
     /**
-     * Identifies products whose price deviates from the mean by more than the specified
-     * number of standard deviations. Uses population standard deviation over all products.
-     * Test expectation: with a mostly tight cluster and two extremes, calling with 2.0 returns the two extremes.
+     * Identifies price outliers using the Median Absolute Deviation (MAD) method
+     * This is more robust against extreme values than standard deviation
      *
-     * @param standardDeviations threshold in standard deviations (e.g., 2.0)
+     * A product is considered an outlier if:
+     * |price - median| / MAD > threshold
+     *
+     * @param threshold typically around 3.0
      * @return list of products considered outliers
      */
-    public List<Product> findPriceOutliers(double standardDeviations) {
+    public List<Product> findPriceOutliers(double threshold) {
         List<Product> products = warehouse.getProducts();
-        int n = products.size();
-        if (n == 0) return List.of();
-        double sum = products.stream().map(Product::price).mapToDouble(bd -> bd.doubleValue()).sum();
-        double mean = sum / n;
-        double variance = products.stream()
-                .map(Product::price)
-                .mapToDouble(bd -> Math.pow(bd.doubleValue() - mean, 2))
-                .sum() / n;
-        double std = Math.sqrt(variance);
-        double threshold = standardDeviations * std;
+        if (products.isEmpty()) return List.of();
+
+        // Get sorted list of prices
+        List<Double> prices = products.stream()
+                .map(p -> p.price().doubleValue()).sorted().collect(Collectors.toList());
+
+        // Compute median price
+        double median = median(prices);
+
+        // Compute absolute deviations from median
+        List<Double> deviations = prices.stream()
+                .map(p -> Math.abs(p - median)).sorted().collect(Collectors.toList());
+
+        // Compute MAD (median of absolute deviations)
+        double mad = median(deviations);
+        if (mad == 0) mad = 0.0001; // Avoid division by zero
+
+        // Find products considered outliers
         List<Product> outliers = new ArrayList<>();
         for (Product p : products) {
-            double diff = Math.abs(p.price().doubleValue() - mean);
-            if (diff > threshold) outliers.add(p);
+            double diff = Math.abs(p.price().doubleValue() - median);
+            if (diff / mad > threshold) {
+                outliers.add(p);
+            }
         }
         return outliers;
     }
-    
+
+    /**
+     * Helper to compute median from a sorted list
+     */
+    private double median(List<Double> sorted) {
+        int n = sorted.size();
+        if (n == 0) return 0.0;
+        if (n % 2 == 1) {
+            return sorted.get(n / 2);
+        }
+        else{
+            return (sorted.get(n / 2 - 1) + sorted.get(n / 2)) / 2.0;
+        }
+    }
+
     /**
      * Groups all shippable products into ShippingGroup buckets such that each group's total weight
      * does not exceed the provided maximum. The goal is to minimize the number of groups and/or total
